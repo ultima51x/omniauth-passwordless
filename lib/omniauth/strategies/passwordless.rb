@@ -5,6 +5,14 @@ module OmniAuth
     class Passwordless
       include OmniAuth::Strategy
 
+      uid do
+        passwordless.id
+      end
+
+      info do
+        {:uid => passwordless.id, :email => passwordless.email}
+      end
+
       def request_phase
         form = OmniAuth::Form.new(:title => "User Info", :url => callback_path)
         form.text_field "Email", "email"
@@ -15,6 +23,7 @@ module OmniAuth
       def callback_phase
         return fail!(:invalid_email) unless valid_email
         return fail!(:invalid_credentials) unless authenticate
+        super
       end
 
       def valid_email
@@ -27,9 +36,12 @@ module OmniAuth
       end
 
       def authenticate
+        passwordless.valid?
+      end
+
+      def passwordless
         email = request.params["email"]
-        object = model.where(:email => email.downcase).first_or_create
-        object.valid?
+        model.where(:email => email.downcase).first_or_create
       end
     end
   end
